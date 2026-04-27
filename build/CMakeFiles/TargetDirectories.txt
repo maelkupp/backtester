@@ -1,0 +1,3 @@
+/home/mael/projects/backtester/build/CMakeFiles/main.dir
+/home/mael/projects/backtester/build/CMakeFiles/edit_cache.dir
+/home/mael/projects/backtester/build/CMakeFiles/rebuild_cache.dir
