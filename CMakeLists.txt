@@ -7,7 +7,10 @@ set(CMAKE_CXX_STANDARD 17)
 #target_include_directories(math_utils PUBLIC include)
 
 # Build the main executable
-add_executable(main src/main.cpp)
+add_executable(main 
+    src/main.cpp
+    src/core/data.cpp
+    src/core/execution.cpp)
 
 
 
