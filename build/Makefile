@@ -129,6 +129,54 @@ main/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
 .PHONY : main/fast
 
+src/core/data.o: src/core/data.cpp.o
+.PHONY : src/core/data.o
+
+# target to build an object file
+src/core/data.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/data.cpp.o
+.PHONY : src/core/data.cpp.o
+
+src/core/data.i: src/core/data.cpp.i
+.PHONY : src/core/data.i
+
+# target to preprocess a source file
+src/core/data.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/data.cpp.i
+.PHONY : src/core/data.cpp.i
+
+src/core/data.s: src/core/data.cpp.s
+.PHONY : src/core/data.s
+
+# target to generate assembly for a file
+src/core/data.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/data.cpp.s
+.PHONY : src/core/data.cpp.s
+
+src/core/execution.o: src/core/execution.cpp.o
+.PHONY : src/core/execution.o
+
+# target to build an object file
+src/core/execution.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/execution.cpp.o
+.PHONY : src/core/execution.cpp.o
+
+src/core/execution.i: src/core/execution.cpp.i
+.PHONY : src/core/execution.i
+
+# target to preprocess a source file
+src/core/execution.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/execution.cpp.i
+.PHONY : src/core/execution.cpp.i
+
+src/core/execution.s: src/core/execution.cpp.s
+.PHONY : src/core/execution.s
+
+# target to generate assembly for a file
+src/core/execution.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/execution.cpp.s
+.PHONY : src/core/execution.cpp.s
+
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -162,6 +210,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... main"
+	@echo "... src/core/data.o"
+	@echo "... src/core/data.i"
+	@echo "... src/core/data.s"
+	@echo "... src/core/execution.o"
+	@echo "... src/core/execution.i"
+	@echo "... src/core/execution.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

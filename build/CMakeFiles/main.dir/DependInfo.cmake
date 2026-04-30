@@ -8,6 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/mael/projects/backtester/src/core/data.cpp" "CMakeFiles/main.dir/src/core/data.cpp.o" "gcc" "CMakeFiles/main.dir/src/core/data.cpp.o.d"
+  "/home/mael/projects/backtester/src/core/execution.cpp" "CMakeFiles/main.dir/src/core/execution.cpp.o" "gcc" "CMakeFiles/main.dir/src/core/execution.cpp.o.d"
   "/home/mael/projects/backtester/src/main.cpp" "CMakeFiles/main.dir/src/main.cpp.o" "gcc" "CMakeFiles/main.dir/src/main.cpp.o.d"
   )
 

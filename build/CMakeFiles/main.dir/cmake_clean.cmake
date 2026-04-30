@@ -1,4 +1,8 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/main.dir/src/core/data.cpp.o"
+  "CMakeFiles/main.dir/src/core/data.cpp.o.d"
+  "CMakeFiles/main.dir/src/core/execution.cpp.o"
+  "CMakeFiles/main.dir/src/core/execution.cpp.o.d"
   "CMakeFiles/main.dir/src/main.cpp.o"
   "CMakeFiles/main.dir/src/main.cpp.o.d"
   "main"
