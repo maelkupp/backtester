@@ -1,31 +1,43 @@
 #ifndef PORTFOLIO_H
 #define PORTFOLIO_H
 
+#include "data.h"
+#include "execution.h"
+#include <string>
 
-//just defining this for now, still need to decide how I represent partially filled order and other details, for now will assume everything is fully filled
-class Fill{
-    static constexpr double commission_rate_per_share =  0.005; // 0.005 per share bought
-    static constexpr double min_commission_rate = 1; //the commission can no go below 1 unit
-    
-    std::string ticker;
-    double size; //could be positive or negative
-    double filled_price;
-    int order_id; //the id of the order we are filling
+class Fill;
 
+
+//tracks a single open position
+class Position{
+    int instrument_id;
+    double size; //can be positive or negative
+    double avg_entry_price;
+    double unrealized_PL;
+    double realized_PL;
 
     public:
-        Fill(std::string ticker, double size, double price, int order_id): ticker(ticker), size(size), filled_price(price), order_id(order_id){};
+        //when constructing a position we do not have 
+        Position(int instrument_id): instrument_id(instrument_id), size(0.0), avg_entry_price(0.0), unrealized_PL(0.0), realized_PL(0.0) {};
 
-    //getters
-    double get_comm_rate(){
-        return this->commission_rate_per_share;
-    };
+        void update_unrealized_PL(Bar& bar); //update the unrealized PL of the position due to a new bar being seen
+        void add_to_position(Fill& fill); //add to the position the order we filled, can be either a long or a short, updates realized_PL, quantity and avg_entry_price
+        void update_avg_entry_price(double size, double filled_price);
+        void close_position(double fill_price); //close the current position with a price fill_price
 
-    double get_min_comm(){
-        return this->min_commission_rate;
-    };
+        //getters
+        int get_instument_id(){return this->instrument_id;};
+        double get_size(){return this->size;};
+        double get_avg_entry_price(){return this->avg_entry_price;};
+
+        //setters
+        void set_size(double size){this->size = size;};
 };
 
+class PortfolioManager{
+    double cash; //the total cash we have 
+
+};
 
 
 #endif

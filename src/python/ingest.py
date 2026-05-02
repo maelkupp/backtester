@@ -9,15 +9,16 @@ def treat_df(df):
     #need to decide how I handle the the Stock Splits
     if "Dividends" in df.columns:
         df.drop(columns = ['Dividends'], inplace = True)
-    df.index = df.index.tz_convert("UTC").astype(int)
+    df["date"] = df.index.tz_convert("UTC").astype("int64")/10**9 #store the data in the csv for later visualisation
 
-    #also divide as much as possible by 10 the index, to reduce the size of the index
-    t = 10
-    while df.index[0]%t == 0:
-        t *= 10
-    
-    t /= 10
-    df.index = (df.index/t).astype(int)
+    df = df.reset_index() #have a easier index to work with to be able to handle the time differences more easily
+    if "Date" in df.columns:
+        df.drop(columns = ['Date'], inplace = True)
+
+
+
+    df["date"] = (df["date"]).astype(int)
+
 
     return df
 

@@ -177,6 +177,30 @@ src/core/execution.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/execution.cpp.s
 .PHONY : src/core/execution.cpp.s
 
+src/core/portfolio.o: src/core/portfolio.cpp.o
+.PHONY : src/core/portfolio.o
+
+# target to build an object file
+src/core/portfolio.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/portfolio.cpp.o
+.PHONY : src/core/portfolio.cpp.o
+
+src/core/portfolio.i: src/core/portfolio.cpp.i
+.PHONY : src/core/portfolio.i
+
+# target to preprocess a source file
+src/core/portfolio.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/portfolio.cpp.i
+.PHONY : src/core/portfolio.cpp.i
+
+src/core/portfolio.s: src/core/portfolio.cpp.s
+.PHONY : src/core/portfolio.s
+
+# target to generate assembly for a file
+src/core/portfolio.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/core/portfolio.cpp.s
+.PHONY : src/core/portfolio.cpp.s
+
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -216,6 +240,9 @@ help:
 	@echo "... src/core/execution.o"
 	@echo "... src/core/execution.i"
 	@echo "... src/core/execution.s"
+	@echo "... src/core/portfolio.o"
+	@echo "... src/core/portfolio.i"
+	@echo "... src/core/portfolio.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

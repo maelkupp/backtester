@@ -5,10 +5,11 @@
 #include <vector>
 #include <queue>
 
-static const std::string BASE_DIR = "/home/mael/projects/backtester/src/output/";
+extern inline const std::string BASE_DIR = "/home/mael/projects/backtester/src/output/";
 
 struct Bar{
-    unsigned long timestamp;
+    int index;
+    unsigned long timestamp; //the opening time in seconds
     double open;
     double high;
     double low;
@@ -20,9 +21,11 @@ class DataHandler{
     std::string csv_path;
     std::string ticker;
 
+    int bar_size; //how many seconds one bar is, for now I hardcode this to be the length of one day, later I should parametrize this variable
+
     public:
         std::queue<Bar> bars; //need to decide if this is a vector or a queue
-        DataHandler(std::string ticker): csv_path(BASE_DIR + ticker), ticker(ticker){};
+        DataHandler(std::string ticker): csv_path(BASE_DIR + ticker), ticker(ticker), bar_size(86400){};
         void read_csv();
 
         Bar get_next_market_event();
@@ -38,6 +41,10 @@ class DataHandler{
 
         std::string get_ticker(){
             return this->ticker;
+        };
+
+        int get_bar_size(){
+            return this->bar_size;
         };
 };
 

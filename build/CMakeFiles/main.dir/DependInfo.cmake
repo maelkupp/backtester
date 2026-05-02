@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/mael/projects/backtester/src/core/data.cpp" "CMakeFiles/main.dir/src/core/data.cpp.o" "gcc" "CMakeFiles/main.dir/src/core/data.cpp.o.d"
   "/home/mael/projects/backtester/src/core/execution.cpp" "CMakeFiles/main.dir/src/core/execution.cpp.o" "gcc" "CMakeFiles/main.dir/src/core/execution.cpp.o.d"
+  "/home/mael/projects/backtester/src/core/portfolio.cpp" "CMakeFiles/main.dir/src/core/portfolio.cpp.o" "gcc" "CMakeFiles/main.dir/src/core/portfolio.cpp.o.d"
   "/home/mael/projects/backtester/src/main.cpp" "CMakeFiles/main.dir/src/main.cpp.o" "gcc" "CMakeFiles/main.dir/src/main.cpp.o.d"
   )
 

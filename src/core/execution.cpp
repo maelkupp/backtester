@@ -8,15 +8,23 @@
 #include <random>
 
 
+int Order::max_id = 0;
 
 void ExecutionHandler::add_event(std::unique_ptr<Event> event){
+    std::cout << "adding event of type " << event->get_type() << "\n";
     this->event_queue.push(std::move(event));
 };
 
 std::unique_ptr<Event> ExecutionHandler::pop_event(){
-    std::unique_ptr<Event> last_event = std::move(this->event_queue.front());
-    this->event_queue.pop();
-    return last_event;
+    if(!this->event_queue.empty()){
+        //if the queue is not empty return
+        std::unique_ptr<Event> last_event = std::move(this->event_queue.front());
+        this->event_queue.pop();
+        return last_event;
+    }
+
+    return nullptr;
+
 };
 
 void ExecutionHandler::run(DataHandler& dh){
@@ -39,13 +47,32 @@ void ExecutionHandler::run(DataHandler& dh){
                 this->handle_fill_event(*last_event);
                 break;
         }
+        this->post_loop_check(dh); // call a function after the loop ends to perform what is needed for the next day to work: add market event + potential order event
+    }
+};
+
+void ExecutionHandler::post_loop_check(DataHandler& dh){
+    //add the next market event, add this first
+    if(!dh.bars.empty()){
+        //if there are still bars to read
+        std::unique_ptr<MarketEvent> me = std::make_unique<MarketEvent>(dh.get_ticker(), dh.get_next_market_event());
+        this->add_event(std::move(me));
+    }
+
+
+    //add potential order event
+    while(!this->orders_to_add_empty()){
+        std::unique_ptr<Event> o_event = this->pop_o_event_to_add();
+        if(o_event->get_type() != EventType::ORDEREVENT){
+            continue; //pass this loop
+        }
+        this->add_event(std::move(o_event));
     }
 };
 
 
-
 void ExecutionHandler::handle_market_event(Event& event){
-    std::cout << "handling market event with timestamp " << event.get_timestamp() << "\n";
+    //std::cout << "handling market event with timestamp " << event.get_timestamp() << "\n";
     EventType e_type = event.get_type();
     if(e_type != EventType::MARKETEVENT){
         throw std::invalid_argument("Asked the order event to handle another event than an market event");
@@ -62,25 +89,42 @@ void ExecutionHandler::handle_signal_event(Event& event){
 
 };
 
+void ExecutionHandler::create_fill_event_from_order_event(Order& order, double fill_price, unsigned long timestamp){
+    std::cout << "creating fill event from order event\n";
+    Fill fill = Fill(order.get_ticker(), order.get_size(), fill_price, order.get_id());
+    std::unique_ptr<FillEvent> f_event = std::make_unique<FillEvent>(fill, timestamp); 
+    this->add_event(std::move(f_event)); //add the FillEvent to the event queue
+    order.set_state(OrderState::FILLED); //now set the order to filled
+}
 void ExecutionHandler::handle_order_event(Event& event, DataHandler& dh){
     //pass the datahandler as a reference to have access to the next bar we will see
     //this consumes an order event and creates a Fill event, simulating a Fill with slippage + Spread + Commission etc, uses the opening price of the next bar
+    std::cout << "handling order event\n";
     EventType e_type = event.get_type();
     if(e_type != EventType::ORDEREVENT){
-        throw std::invalid_argument("Asked the order event to handle another event than an order event");
+        throw std::invalid_argument("Asked the order event handler to handle another event than an order event");
         return;
     }
 
     if(this->past_bars.size() < 252){
-        //only start filling out orders once we have enough data to work with anyways, however this ensures there wont be any bugs in the logic later on
         return;
     }
 
     OrderEvent& order_event = dynamic_cast<OrderEvent&>(event);
-    Order& order = order_event.get_order();
+    Order order = order_event.get_order();
+    Bar last_bar = this->past_bars[this->past_bars.size()-1]; //get the last bar we have seen
+
+    //right now changing the state is pointless as order is a stack variable, will need to change this later on when the lifetime of the Order objects
+    //becomes clearer, make sure the order is not a market order before cancelling it
+    if(order.get_order_type() != OrderType::MARKET && order.get_expiry_bars() <= last_bar.index - order.get_index()){
+        order.set_state(OrderState::CANCELLED);
+        std::cout << "cancelled the order \n";
+        return;
+    }
+
     OrderType o_type = order.get_order_type();
 
-    Bar last_bar = this->past_bars[-1]; //get the last bar we have seen
+    bool filled = false;
 
     //need to figure out how to obtain the next bar
     switch(o_type){
@@ -109,11 +153,9 @@ void ExecutionHandler::handle_order_event(Event& event, DataHandler& dh){
             
             //now create a Fill object, for now assume that everything gits filled, there is no partial fill
             double fill_price = mid + copysign(1.0, order.get_size())*effective_spread/2 + copysign(1.0, order.get_size())*slippage; //copysign(1.0, x) behaves like sgn(x)
-            Fill fill = Fill(order.get_ticker(), fill_price, order.get_size(), order.get_id());
-            std::unique_ptr<FillEvent> f_event = std::make_unique<FillEvent>(fill, dh.bars.front().timestamp); //it happens on the next day, so that is the timestapm we associate to the fill event
-            this->add_event(std::move(f_event)); //add the FillEvent to the event queue
+            this->create_fill_event_from_order_event(order, fill_price, dh.bars.front().timestamp);//it happens on the next day, so that is the timestapm we associate to the fill event
+            filled = true;
 
-            order.set_state(OrderState::FILLED); //now set the order to filled
             break;
         }
         case(OrderType::LIMIT):{
@@ -132,7 +174,6 @@ void ExecutionHandler::handle_order_event(Event& event, DataHandler& dh){
 
             adv /= static_cast<double>(this->past_bars.size());
 
-            bool filled = false;
             double p = rand() / (RAND_MAX + 1.);
             double filled_prob;
 
@@ -161,21 +202,79 @@ void ExecutionHandler::handle_order_event(Event& event, DataHandler& dh){
             }
 
             if(filled){
-                Fill fill = Fill(order.get_ticker, limit_price, order.get_size(), order.get_id());
-                std::unique_ptr<FillEvent> f_event = std::make_unique<FillEvent>(fill, dh.bars.front().timestamp); //it happens on the next day, so that is the timestapm we associate to the fill event
-                this->add_event(std::move(f_event)); //add the FillEvent to the event queue
-                order.set_state(OrderState::FILLED); //now set the order to filled
+                this->create_fill_event_from_order_event(order, limit_price, dh.bars.front().timestamp);
             }
-
 
             break;
         }
-        case(OrderType::STOP):
+        case(OrderType::STOP):{
             //order is dormat until market trades through order price, then becomes market order need to implement the slippage that occurs
             std::cout << "handling stop order \n";
-            break;
+            double stop_price = order.get_price();
+            double size = order.get_size();
+
+            double open = dh.bars.front().open;
+            double low = dh.bars.front().low;
+            double high = dh.bars.front().high;
+
+            bool stop_to_market_order = false; //boolean flag to check if our stop order got triggered into a market order at price S
+
+            if(size > 0 && high > stop_price){
+                //buy stop
+                if(open > stop_price){
+                    //stop slippage occurs so we fill at open
+                    filled = true;
+                }else{
+                    //behaves like a regular buy market order with fill_price = S + spread/2 + slippage
+                    stop_to_market_order = true;
+                }
+
+            }else if(size < 0 && low < stop_price){
+                //sell stop
+                if(open < stop_price){
+                    filled = true;
+                }else{
+                    //behaves like a regular sell market order with fill_price = S - spread/2 - slippage
+                    stop_to_market_order = true;
+                }
+            }
+
+            if(stop_to_market_order){
+                //use the same logic as in the market order case but instead of the mid_price being the open of the next bar, it is the stop_price
+                double adv = std::accumulate(this->past_bars.end() - 20, this->past_bars.end(), 0.0, 
+                                            [](int accumulator, const Bar& bar){
+                                                return accumulator + bar.volume;
+                                            });
+
+                adv /= static_cast<double>(this->past_bars.size());
+
+                auto [vol_ratio, realized_vol] = compute_vol_ratio_n_realized_vol(this->past_bars);
+                double base_spread  = volume_to_spread(last_bar.volume, last_bar.open); 
+
+                double effective_spread = base_spread * vol_ratio;
+
+                double k = 0.5; //a higher slippage constant than in the regular market order case
+                double slippage = k * realized_vol * sqrt(order.get_size() / adv);
+
+                
+                //now create a Fill object, for now assume that everything gits filled, there is no partial fill
+                stop_price = stop_price + copysign(1.0, order.get_size())*effective_spread/2 + copysign(1.0, order.get_size())*slippage; //copysign(1.0, x) behaves like sgn(x)
+            }
+            
+
+            if(filled){
+                this->create_fill_event_from_order_event(order, stop_price, dh.bars.front().timestamp);
+            }
+        
+        break;
+        }
     }
 
+    if(!filled){
+        //an order was sent but we did not manage to full it so we add it to be handled on the next day again
+        this->push_o_event_to_add(std::move(std::make_unique<OrderEvent>(order_event.get_order(), order_event.get_timestamp())));
+        //cannot pass the order variable as it is a reference
+    }
 };
 
 void ExecutionHandler::handle_fill_event(Event& event){
@@ -196,8 +295,8 @@ std::pair<double, double> compute_vol_ratio_n_realized_vol(const std::vector<Bar
     int long_window = 252;
     int short_window = 20;
     
-    double short_vol = garman_klass_rolling(bars, short_window);
-    double long_vol  = garman_klass_rolling(bars, long_window);
+    double short_vol = yang_zhang_rolling(bars, short_window);
+    double long_vol  = yang_zhang_rolling(bars, long_window);
     return {short_vol / long_vol, short_vol};
 
 };
@@ -279,10 +378,10 @@ double volume_to_spread(double volume, double price){
     double notional = volume * price;  // dollar volume is more meaningful than share volume
     
     //values were determined by claude should look over them to see if I like them
-    if (notional > 1e9)       return 0.0001;  // 1 bp  - very liquid (SPY-like)
-    else if (notional > 1e8)  return 0.0002;  // 2 bps - large cap
-    else if (notional > 1e7)  return 0.0005;  // 5 bps - mid cap
-    else if (notional > 1e6)  return 0.0010;  // 10 bps - small cap
+    if (notional >= 1e9)       return 0.0001;  // 1 bp  - very liquid (SPY-like)
+    else if (notional >= 1e8)  return 0.0002;  // 2 bps - large cap
+    else if (notional >= 1e7)  return 0.0005;  // 5 bps - mid cap
+    else if (notional >= 1e6)  return 0.0010;  // 10 bps - small cap
     else                      return 0.0050;  // 50 bps - illiquid
 
 };
