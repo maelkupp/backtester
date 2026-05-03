@@ -44,14 +44,14 @@ class ExecutionHandler{
     std::queue<std::unique_ptr<Event>> orders_to_add;
 
     public:
-        void run(DataHandler& dh);
-        void post_loop_check(DataHandler& dh);
+        void run(int instrument_id, DataHandler& dh);
+        void post_loop_check(int instrument_id, DataHandler& dh);
         void add_bar(Bar bar);
         std::unique_ptr<Event> pop_event();
         void add_event(std::unique_ptr<Event> event);
         void handle_market_event(Event& event);
         void handle_signal_event(Event& event);
-        void handle_order_event(Event& event, DataHandler& dh);
+        void handle_order_event(int instrument_id, Event& event, DataHandler& dh);
         void handle_fill_event(Event& event);
 
         void create_fill_event_from_order_event(Order& order, double fill_price, unsigned long timestamp);
@@ -104,21 +104,21 @@ class Order{
     int index; //corresponds to the index of the bar during which this order was placed
     OrderState state;
     OrderType type;
-    std::string ticker;
+    int instrument_id;
     double size; //negative represents a short positive represents long
     double price; //the price demanded from the order, not necessarily the one that will get filled by the market
     int expiry_bars; //the number of bars this order remains valid before being cancelled
     public:
         //I made the price optional as a market order does ask for a price wants to buy straight away
-        Order(OrderType type, std::string ticker, double size, unsigned long timestamp, int index, double price = 0.0, int expiry_bars=1): type(type), state(OrderState::CREATED), 
-            ticker(ticker), price(price), size(size), expiry_bars(expiry_bars), id(max_id++), timestamp(timestamp), index(index){};
+        Order(OrderType type, int instrument_id, double size, unsigned long timestamp, int index, double price = 0.0, int expiry_bars=1): 
+        type(type), state(OrderState::CREATED), price(price), size(size), expiry_bars(expiry_bars), id(max_id++), timestamp(timestamp), index(index), instrument_id(instrument_id){};
 
         //getters
         OrderState get_state(){return this->state;};
         
         unsigned long get_timestamp(){return this->timestamp;};
 
-        std::string get_ticker(){return this->ticker;};
+        int get_instrument_id(){return this->instrument_id;};
 
         double get_size(){return this->size;};
 
@@ -141,17 +141,17 @@ class Order{
 
 //just defining this for now, still need to decide how I represent partially filled order and other details, for now will assume everything is fully filled
 class Fill{
-    static constexpr double commission_rate_per_share =  0.005; // 0.005 per share bought
-    static constexpr double min_commission_rate = 1; //the commission can no go below 1 unit
-    
-    std::string ticker;
+    int instrument_id;
     double size; //could be positive or negative
     double filled_price;
     int order_id; //the id of the order we are filling
 
 
     public:
-        Fill(std::string ticker, double size, double price, int order_id): ticker(ticker), size(size), filled_price(price), order_id(order_id){};
+        static constexpr double commission_rate_per_share =  0.005; // 0.005 per share bought
+        static constexpr double min_commission_rate = 1; //the commission can no go below 1 unit
+        
+        Fill(int instrument_id, double size, double price, int order_id): instrument_id(instrument_id), size(size), filled_price(price), order_id(order_id){};
 
         double get_commission(){
             //returns the commission associated to a fill, it must be initialized
@@ -172,13 +172,13 @@ class Fill{
 
 class MarketEvent : public Event{
     Bar bar;
-    std::string ticker;
+    int instrument_id;
     public:
-        MarketEvent(std::string ticker, Bar bar){
+        MarketEvent(int instrument_id, Bar bar){
             this->timestamp = bar.timestamp; //this information is kind of redundant but we should keep it for the sake of cohesion with other sibling classes
             this->type = EventType::MARKETEVENT;
             this->bar = bar;
-            this->ticker = ticker;
+            this->instrument_id = instrument_id;
         };
 
         Bar get_bar(){

@@ -71,3 +71,55 @@ void Position::add_to_position(Fill& fill){
         this->avg_entry_price = fill_price;
     }
 };
+
+void PortfolioManager::close_position(int instrument_id){
+    this->positions.erase(instrument_id);
+    this->instrument_ids.erase(instrument_id);
+};
+
+
+void PortfolioManager::update_instrument_position_from_fill(int instrument_id, Fill& fill){
+    //if we sold, fill.get_size() < 0 but we gain cash
+    double fill_size = fill.get_size();
+    if(fill_size > 0){
+        //we bought
+        this->cash -= fill_size*fill.get_filled_price() + fill.get_commission();
+    }else{
+        this->cash += (-fill_size)*fill.get_filled_price() - fill.get_commission();
+    }
+
+    if(this->positions.find(instrument_id) != this->positions.end()){
+        //if the position is in our this->positions map
+        this->positions[instrument_id].add_to_position(fill);
+    }else{
+        //we create a position and add it to our this->positions 
+        this->positions[instrument_id] = Position(instrument_id);
+        this->instrument_ids.insert(instrument_id); //add the instrument id to our set of active positions
+        this->positions[instrument_id].add_to_position(fill); //now we can update the position
+    }
+
+    //now we check if this fill 'closed' our position, if it did we remove our position from the positions map
+    if(std::abs(this->positions[instrument_id].get_size()) < 1e-4){
+        this->close_position(instrument_id);
+    }
+};
+
+void PortfolioManager::update_positions_from_bars(std::vector<std::pair<int, Bar>>& new_bars){
+    // we have received the new market information for all of our instruments, we are assuming that we are not missing any bars for one of the instruments in the portfolio
+    if(new_bars.size() != this->positions.size());
+    double new_equity = this->cash;
+    for(const auto& pair: new_bars){
+        new_equity += this->positions[pair.first].get_size()*pair.second.close;
+    }
+    this->curr_equity = new_equity;
+    this->equity_ts.push_back(new_equity); // add this new value to the vector
+};
+
+bool PortfolioManager::equity_value_check(std::vector<std::pair<int, Bar>>& present_bars){
+    double computed_equity = this->cash;
+    for(const auto& pair: present_bars){
+        computed_equity += this->positions[pair.first].get_size()*pair.second.close;
+    }
+
+    return std::abs(computed_equity - this->curr_equity) < 1e-4;
+};

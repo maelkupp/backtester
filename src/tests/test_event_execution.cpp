@@ -136,11 +136,11 @@ void test_data_csv_row_count()
     auto bars = make_bars(5);
     write_temp_csv("TEST_ROWCOUNT", bars);
 
-    DataHandler dh("TEST_ROWCOUNT");
-    dh.read_csv();
+    DataHandler dh;
+    dh.read_csv("TEST_ROWCOUNT");
 
     int count = 0;
-    while (!dh.bars.empty()) { dh.get_next_market_event(); ++count; }
+    while (!dh.instrument_bars(0).empty()) { dh.get_next_market_event(); ++count; }
     ASSERT(count == 5);
 }
 
@@ -151,8 +151,8 @@ void test_data_csv_field_values()
     Bar expected{0, 1'620'000'000UL, 150.0, 155.0, 148.0, 152.0, 5'000'000UL};
     write_temp_csv("TEST_FIELDS", {expected});
 
-    DataHandler dh("TEST_FIELDS");
-    dh.read_csv();
+    DataHandler dh;
+    dh.read_csv("TEST_FIELDS");
 
     Bar got = dh.get_next_market_event();
     ASSERT(got.index     == expected.index);
@@ -170,8 +170,8 @@ void test_data_queue_fifo_order()
     auto bars = make_bars(3);
     write_temp_csv("TEST_FIFO", bars);
 
-    DataHandler dh("TEST_FIFO");
-    dh.read_csv();
+    DataHandler dh;
+    dh.read_csv("TEST_FIFO");
 
     for (int i = 0; i < 3; ++i) {
         Bar b = dh.get_next_market_event();
@@ -184,8 +184,8 @@ void test_data_empty_after_drain()
     auto bars = make_bars(2);
     write_temp_csv("TEST_EMPTY", bars);
 
-    DataHandler dh("TEST_EMPTY");
-    dh.read_csv();
+    DataHandler dh;
+    dh.read_csv("TEST_EMPTY");
     dh.get_next_market_event();
     dh.get_next_market_event();
     ASSERT(dh.bars.empty());
@@ -287,8 +287,8 @@ void test_order_below_252_bars_not_filled()
     auto bars = make_bars(10);
     write_temp_csv("TEST_UNDERFILL", make_bars(300));  // plenty of future bars
 
-    DataHandler dh("TEST_UNDERFILL");
-    dh.read_csv();
+    DataHandler dh;
+    dh.read_csv("TEST_UNDERFILL");
 
     ExecutionHandler eh;
     seed_past_bars(eh, bars);               // only 10 bars in past_bars
